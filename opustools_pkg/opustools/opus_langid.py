@@ -37,7 +37,9 @@ class LanguageIdAdder(BlockParser):
         def start_element(name, attrs):
             """Update current block"""
             sub_block = Block(parent=self.block, name=name, attributes=attrs)
-            attr_str = ' '.join([f'{k}="{v}"' for k, v in sub_block.attributes.items()])
+            attr_str = ' '.join(
+                f'{k}={saxutils.quoteattr(v)}' for k, v in sub_block.attributes.items()
+            )
             if name not in {'s', 'w'}:
                 self.write_to_out(f'<{sub_block.name} {attr_str}>\n')
             else:
@@ -73,7 +75,9 @@ class LanguageIdAdder(BlockParser):
             sentence = ' '.join(sentence)
             cl, cc, ll, lc = self.detectLanguage(sentence, sid)
             for block in self.s_blocks:
-                attr_str = ' '.join([f'{k}="{v}"' for k, v in block.attributes.items()])
+                attr_str = ' '.join(
+                    f'{k}={saxutils.quoteattr(v)}' for k, v in block.attributes.items()
+                )
                 # Escape the text portion before writing
                 escaped_data = saxutils.escape(block.data)
                 if block.name == 's':
@@ -81,10 +85,12 @@ class LanguageIdAdder(BlockParser):
                     block.attributes['cld2conf'] = cc
                     block.attributes['langid'] = ll
                     block.attributes['langidconf'] = lc
-                    attr_str = ' '.join([f'{k}="{v}"' for k, v in block.attributes.items()])
+                    attr_str = ' '.join(f'{k}={saxutils.quoteattr(v)}'
+                    for k, v in block.attributes.items())
                     self.write_to_out(f'<{block.name} {attr_str}>{escaped_data}\n')
                 else:
-                    attr_str = ' '.join([f'{k}="{v}"' for k, v in block.attributes.items()])
+                    attr_str = ' '.join(f'{k}={saxutils.quoteattr(v)}'
+                    for k, v in block.attributes.items())
                     self.write_to_out(f'<{block.name} {attr_str}>{escaped_data}</{block.name}>\n')
             self.write_to_out('</s>\n')
 
