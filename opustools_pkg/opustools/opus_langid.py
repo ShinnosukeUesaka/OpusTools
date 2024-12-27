@@ -5,6 +5,7 @@ import argparse
 import cgi
 import tempfile
 import re
+import xml.sax.saxutils as saxutils
 
 import pycld2
 from langid.langid import LanguageIdentifier, model
@@ -47,7 +48,9 @@ class LanguageIdAdder(BlockParser):
             """Update complete blocks, and move up one level on block tree"""
             self.completeBlocks.append(self.block)
             if name not in {'s', 'w'}:
-                self.write_to_out(f'{self.block.data}</{self.block.name}>\n')
+                # Escape only the data portion
+                escaped_data = saxutils.escape(self.block.data)
+                self.write_to_out(f'{escaped_data}</{self.block.name}>\n')
             self.block = self.block.parent
 
         def char_data(data):
@@ -70,16 +73,19 @@ class LanguageIdAdder(BlockParser):
             sentence = ' '.join(sentence)
             cl, cc, ll, lc = self.detectLanguage(sentence, sid)
             for block in self.s_blocks:
+                attr_str = ' '.join([f'{k}="{v}"' for k, v in block.attributes.items()])
+                # Escape the text portion before writing
+                escaped_data = saxutils.escape(block.data)
                 if block.name == 's':
                     block.attributes['cld2'] = cl
                     block.attributes['cld2conf'] = cc
                     block.attributes['langid'] = ll
                     block.attributes['langidconf'] = lc
                     attr_str = ' '.join([f'{k}="{v}"' for k, v in block.attributes.items()])
-                    self.write_to_out(f'<{block.name} {attr_str}>{block.data}\n')
+                    self.write_to_out(f'<{block.name} {attr_str}>{escaped_data}\n')
                 else:
                     attr_str = ' '.join([f'{k}="{v}"' for k, v in block.attributes.items()])
-                    self.write_to_out(f'<{block.name} {attr_str}>{block.data}</{block.name}>\n')
+                    self.write_to_out(f'<{block.name} {attr_str}>{escaped_data}</{block.name}>\n')
             self.write_to_out('</s>\n')
 
             sentence = []
